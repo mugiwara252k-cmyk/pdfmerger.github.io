@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Merger</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Merge your PDF Files</h1>
+            <p>Combine multiple PDFs into a single document. It's fast, simple, and secure.</p>
+        </header>
+
+        <div id="upload-view" class="upload-view">
+            <div class="drop-zone" id="dropZone">
+                <p>Drag & drop your PDF files here</p>
+                <button id="selectBtn">Select PDF Files</button>
+            </div>
+            <input type="file" id="fileInput" accept=".pdf" multiple hidden>
+        </div>
+
+        <div id="files-view" class="files-view hidden">
+            <div class="sort-options">
+                <button id="sortAZ">Sort A-Z</button>
+                <button id="sortZA">Sort Z-A</button>
+                <button id="sortDate">Sort by Date</button>
+            </div>
+            <div id="filesGrid" class="files-grid"></div>
+            <div class="actions">
+                <button id="addMoreBtn">Add More Files</button>
+                <button id="mergeBtn" disabled>Merge PDFs</button>
+            </div>
+        </div>
+
+        <div id="loading-view" class="loading-view hidden">
+            <div class="spinner"></div>
+            <p>Merging...</p>
+        </div>
+
+        <div id="download-view" class="download-view hidden">
+            <h2>Your PDF is ready!</h2>
+            <button id="downloadBtn">Download Merged PDF</button>
+            <button id="startOverBtn">Start Over</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
