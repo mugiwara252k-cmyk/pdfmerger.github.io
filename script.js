@@ -1,7 +1,9 @@
 class PDFMerger {
     constructor() {
         this.files = [];
+        this.images = [];
         this.mergedPdfBytes = null;
+        this.currentMode = 'merger';
         this.initializeElements();
         this.bindEvents();
     }
@@ -19,6 +21,17 @@ class PDFMerger {
         this.mergeBtn = document.getElementById('mergeBtn');
         this.downloadBtn = document.getElementById('downloadBtn');
         this.startOverBtn = document.getElementById('startOverBtn');
+        
+        // PDF Maker elements
+        this.makerView = document.getElementById('maker-view');
+        this.textMaker = document.getElementById('text-maker');
+        this.imageMaker = document.getElementById('image-maker');
+        this.pdfText = document.getElementById('pdfText');
+        this.fontSize = document.getElementById('fontSize');
+        this.pageSize = document.getElementById('pageSize');
+        this.imageDropZone = document.getElementById('imageDropZone');
+        this.imageInput = document.getElementById('imageInput');
+        this.imageGrid = document.getElementById('imageGrid');
     }
 
     bindEvents() {
@@ -32,6 +45,18 @@ class PDFMerger {
         document.getElementById('sortAZ').addEventListener('click', () => this.sortFiles('az'));
         document.getElementById('sortZA').addEventListener('click', () => this.sortFiles('za'));
         document.getElementById('sortDate').addEventListener('click', () => this.sortFiles('date'));
+        
+        // Mode switcher
+        document.getElementById('mergerMode').addEventListener('click', () => this.setMode('merger'));
+        document.getElementById('makerMode').addEventListener('click', () => this.setMode('maker'));
+        
+        // PDF Maker events
+        document.getElementById('textToPdf').addEventListener('click', () => this.setMakerMode('text'));
+        document.getElementById('imageToPdf').addEventListener('click', () => this.setMakerMode('image'));
+        document.getElementById('createTextPdf').addEventListener('click', () => this.createTextPdf());
+        document.getElementById('selectImages').addEventListener('click', () => this.imageInput.click());
+        document.getElementById('createImagePdf').addEventListener('click', () => this.createImagePdf());
+        this.imageInput.addEventListener('change', (e) => this.handleImages(e.target.files));
 
         // Drag and drop
         this.dropZone.addEventListener('dragover', (e) => {
@@ -207,6 +232,107 @@ class PDFMerger {
         this.filesView.classList.add('hidden');
         this.loadingView.classList.add('hidden');
         this.downloadView.classList.remove('hidden');
+    }
+}
+
+}
+
+    setMode(mode) {
+        this.currentMode = mode;
+        document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(mode + 'Mode').classList.add('active');
+        
+        if (mode === 'merger') {
+            document.getElementById('mainTitle').textContent = 'Merge your PDF Files';
+            document.getElementById('mainSubtitle').textContent = 'Combine multiple PDFs into a single document. It\'s fast, simple, and secure.';
+            this.showUploadView();
+            this.makerView.classList.add('hidden');
+        } else {
+            document.getElementById('mainTitle').textContent = 'Create PDF Files';
+            document.getElementById('mainSubtitle').textContent = 'Generate PDFs from text or images. Simple and fast.';
+            this.makerView.classList.remove('hidden');
+            this.uploadView.classList.add('hidden');
+            this.filesView.classList.add('hidden');
+        }
+    }
+
+    setMakerMode(type) {
+        document.querySelectorAll('.maker-option-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(type + 'ToPdf').classList.add('active');
+        
+        if (type === 'text') {
+            this.textMaker.classList.remove('hidden');
+            this.imageMaker.classList.add('hidden');
+        } else {
+            this.textMaker.classList.add('hidden');
+            this.imageMaker.classList.remove('hidden');
+        }
+    }
+
+    handleImages(fileList) {
+        const imageFiles = Array.from(fileList).filter(file => file.type.startsWith('image/'));
+        imageFiles.forEach(file => this.images.push(file));
+        this.renderImages();
+    }
+
+    renderImages() {
+        this.imageGrid.innerHTML = '';
+        this.images.forEach((image, index) => {
+            const card = document.createElement('div');
+            card.className = 'image-card';
+            card.innerHTML = `
+                <img src="${URL.createObjectURL(image)}" alt="${image.name}">
+                <button class="remove-btn" onclick="pdfMerger.removeImage(${index})">×</button>
+            `;
+            this.imageGrid.appendChild(card);
+        });
+        document.getElementById('createImagePdf').disabled = this.images.length === 0;
+    }
+
+    removeImage(index) {
+        this.images.splice(index, 1);
+        this.renderImages();
+    }
+
+    async createTextPdf() {
+        const text = this.pdfText.value.trim();
+        if (!text) return alert('Please enter some text.');
+        
+        try {
+            const pdfDoc = await PDFLib.PDFDocument.create();
+            const page = pdfDoc.addPage();
+            page.drawText(text, { x: 50, y: page.getHeight() - 50, size: 12 });
+            this.mergedPdfBytes = await pdfDoc.save();
+            this.showDownloadView();
+        } catch (error) {
+            alert('Error creating PDF');
+        }
+    }
+
+    async createImagePdf() {
+        if (this.images.length === 0) return;
+        
+        try {
+            const pdfDoc = await PDFLib.PDFDocument.create();
+            for (const imageFile of this.images) {
+                const arrayBuffer = await imageFile.arrayBuffer();
+                let image;
+                if (imageFile.type.includes('jpeg') || imageFile.type.includes('jpg')) {
+                    image = await pdfDoc.embedJpg(arrayBuffer);
+                } else if (imageFile.type.includes('png')) {
+                    image = await pdfDoc.embedPng(arrayBuffer);
+                }
+                if (image) {
+                    const page = pdfDoc.addPage();
+                    const { width, height } = image.scale(0.5);
+                    page.drawImage(image, { x: 50, y: page.getHeight() - height - 50, width, height });
+                }
+            }
+            this.mergedPdfBytes = await pdfDoc.save();
+            this.showDownloadView();
+        } catch (error) {
+            alert('Error creating PDF');
+        }
     }
 }
 
